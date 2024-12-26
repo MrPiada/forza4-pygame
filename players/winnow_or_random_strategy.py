@@ -5,6 +5,10 @@ from board import Board
 class WinnowOrRandomStrategy:
     def __init__(self):
         self.name = "Winnow or Random Strategy"
+        self.player_side = None
+
+    def set_player_side(self, player):
+        self.player_side = player
 
     def play(self, board):
         """
@@ -53,12 +57,3 @@ class WinnowOrRandomStrategy:
 
     def __str__(self):
         return self.name
-
-
-# Example usage
-if __name__ == "__main__":
-    random_strategy = RandomStrategy()
-    winnow_strategy = WinnowOrRandomStrategy()
-
-    results = play_games(100, winnow_strategy, random_strategy)
-    print(results)

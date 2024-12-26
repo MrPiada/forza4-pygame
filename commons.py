@@ -9,4 +9,5 @@ COLUMNS = 7
 STRATEGY_MODULES = {
     "random": "players.random_strategy.RandomStrategy",
     "winnow_or_random": "players.winnow_or_random_strategy.WinnowOrRandomStrategy",
+    "minimax": "players.minimax_strategy.MinimaxStrategy",
 }

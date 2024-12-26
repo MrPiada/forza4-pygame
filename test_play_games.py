@@ -6,34 +6,46 @@ from board import Board
 from commons import *
 
 
-def play_game(p1_strategy, p2_strategy, starting_player=PLAYER1):
-    """Plays a single game between two strategies.
+from tqdm import tqdm
 
-    Args:
-        p1_strategy (function): The strategy for player 1.
-        p2_strategy (function): The strategy for player 2.
-        starting_player (int): The player who starts the game (default is PLAYER1).
+def play_game(p1_strategy, p2_strategy, starting_player=PLAYER1, debug=False):
+    """Plays a single game between two strategies with a progress bar for moves."""
 
-    Returns:
-        Board: The final board state.
-    """
     board = Board()
     board.current_player = starting_player  # Set the starting player
     player_strategies = {PLAYER1: p1_strategy, PLAYER2: p2_strategy}
 
-    while not board.is_gameover():
-        current_strategy = player_strategies[board.current_player]
-        move = current_strategy.play(board)
-        board.make_move(move)
+    if starting_player == PLAYER1:
+        p1_strategy.set_player_side(PLAYER1)
+        p2_strategy.set_player_side(PLAYER2)
+    else:
+        p1_strategy.set_player_side(PLAYER2)
+        p2_strategy.set_player_side(PLAYER1)
+
+    # Create a tqdm progress bar with a dynamic length based on maximum number of moves (9 for Tic Tac Toe)
+    with tqdm(total=ROWS*COLUMNS, desc="Game Progress", leave=False) as pbar:
+        while not board.is_gameover():
+            current_strategy = player_strategies[board.current_player]
+            move = current_strategy.play(board)
+            board.make_move(move)
+            pbar.update(1)  # Update the progress bar for each move
+
+    if debug:
+        if starting_player == PLAYER1:
+            print(f"{p1_strategy} vs {p2_strategy}")
+        else:
+            print(f"{p2_strategy} vs {p1_strategy}")
+        print(board)
 
     return board
+
 
 
 def play_games(
         total_games,
         p1_strategy,
         p2_strategy,
-        play_single_game=play_game):
+        debug=False):
     """Plays multiple games between two strategies and prints the results.
 
     Args:
@@ -54,15 +66,33 @@ def play_games(
     # Alternate starting player for each game
     starting_player = PLAYER1
 
-    for _ in tqdm(range(total_games)):
-        final_board = play_single_game(
+    for i in tqdm(range(total_games), desc="Games"):
+        if debug:
+            print(f"Game {i + 1}/{total_games}")
+
+        final_board = play_game(
             p1_strategy,
             p2_strategy,
-            starting_player=starting_player
+            starting_player,
+            debug
         )
         result = final_board.get_game_result()
-        results[result] += 1
-
+        if debug:
+            print(f"Result: {result}")
+            
+        if result == RESULT_DRAW:
+            results[RESULT_DRAW] += 1
+        elif result == PLAYER1:
+            if starting_player == PLAYER1:
+                results[PLAYER1] += 1
+            else:
+                results[PLAYER2] += 1
+        elif result == PLAYER2:
+            if starting_player == PLAYER1:
+                results[PLAYER2] += 1
+            else:
+                results[PLAYER1] += 1
+        
         # Alternate the starting player
         starting_player = PLAYER2 if starting_player == PLAYER1 else PLAYER1
 
@@ -108,6 +138,7 @@ def main():
         default="winnow_or_random")
     parser.add_argument("--games", type=int, default=100,
                         help="Number of games to simulate (default: 100).")
+    parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
 
     args = parser.parse_args()
 
@@ -121,20 +152,24 @@ def main():
             args.games} games between {
             args.player1} and {
                 args.player2}...")
-    results = play_games(args.games, player1_strategy, player2_strategy)
+    results = play_games(
+        args.games,
+        player1_strategy,
+        player2_strategy,
+        args.debug)
 
     # RESULTS
     table = PrettyTable()
     table.field_names = ["Outcome", "Score (%)", "Count"]
-    table.add_row(
-        [f"Wins: {args.player1}", f"{results[PLAYER1] / args.games * 100:.1f}%", results[PLAYER1]]
-    )
-    table.add_row(
-        [f"Wins: {args.player2}", f"{results[PLAYER2] / args.games * 100:.1f}%", results[PLAYER2]]
-    )
-    table.add_row(
-        ["Draws", f"{results[RESULT_DRAW] / args.games * 100:.1f}%", results[RESULT_DRAW]]
-    )
+    table.add_row([f"Wins: {args.player1}",
+                   f"{results[PLAYER1] / args.games * 100:.1f}%",
+                   results[PLAYER1]])
+    table.add_row([f"Wins: {args.player2}",
+                   f"{results[PLAYER2] / args.games * 100:.1f}%",
+                   results[PLAYER2]])
+    table.add_row(["Draws",
+                   f"{results[RESULT_DRAW] / args.games * 100:.1f}%",
+                   results[RESULT_DRAW]])
 
     # Configura l'allineamento
     table.align["Outcome"] = "l"
