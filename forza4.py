@@ -270,7 +270,7 @@ def ai_move_champion(grid, simulations=1000):
             return forced_move
 
         remaining_moves = sum(board[0][c] == 0 for c in range(COLS))
-        num_simulations = 1000 if remaining_moves > 20 else 500 if remaining_moves > 10 else 100
+        num_simulations = simulations if remaining_moves > 20 else 500 if remaining_moves > 10 else 100
 
         for col in range(COLS):
             if board[0][col] == 0:
